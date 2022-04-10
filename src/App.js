@@ -82,8 +82,7 @@ function App() {
       .catch(err => console.log(err));
   }
 
-  const bridgeEthToMatic = async (e) => {
-    e.preventDefault();
+  const bridgeEthToMatic = async () => {
     await hyphen.init();
 
     let preTransferStatus = await hyphen.depositManager.preDepositStatus({
@@ -125,8 +124,7 @@ function App() {
 
   }
 
-  const bridgeMaticToEth = async (e) => {
-    e.preventDefault();
+  const bridgeMaticToEth = async () => {
     await hyphen.init();
 
     let preTransferStatus = await hyphen.depositManager.preDepositStatus({
@@ -183,6 +181,15 @@ function App() {
   }
   }
 
+  const onSubmitHandler = async (e) => {
+    e.preventDefault();
+    if(chainId === '0x5') {
+      bridgeEthToMatic();
+    } else if (chainId === '0x13881') {
+      bridgeMaticToEth();
+    }
+  }
+
   useEffect(() => {
     checkIfWalletIsConnected();
   }, [])
@@ -214,52 +221,53 @@ function App() {
   return (
     <VStack p={4}>
       <HStack 
-      alignSelf='flex-end'>
-        {
-          currAccount ? (
-            <Tag
-            size='lg'
-            colorScheme='teal'>
-              <Text 
-              maxWidth='150px'
-              isTruncated>
-                {
-                  chainId in chainIDs ? chainIDs[chainId] : 'Wrong network'
-                }
-              </Text>
-            </Tag>
-          ) : (
-            null
-          )
-        }
-        {
-          currAccount ? (
-            <Tag
-            size='lg'
-            colorScheme='orange'>
-              <Text 
-              maxWidth='150px'
-              isTruncated>{currAccount}
-              </Text>
-            </Tag>
-          ) : (
-            <Button 
-            colorScheme='orange' 
-            px='8' 
-            type='button'
-            onClick={connectWallet}
-            >
-              Connect Wallet
-            </Button>
-          )
-        }
-      <IconButton
-      icon={colorMode ==='light' ? <FaMoon /> : <FaSun />}
-      isRound='true' 
-      size='lg' 
-      alignSelf='flex-end'
-      onClick={toggleColorMode}/>
+        alignSelf='flex-end'>
+          {
+            currAccount ? (
+              <Tag
+              size='lg'
+              colorScheme='teal'>
+                <Text 
+                maxWidth='150px'
+                isTruncated>
+                  {
+                    chainId in chainIDs ? chainIDs[chainId] : 'Wrong network'
+                  }
+                </Text>
+              </Tag>
+            ) : (
+              null
+            )
+          }
+          {
+            currAccount ? (
+              <Tag
+              size='lg'
+              colorScheme='orange'>
+                <Text 
+                maxWidth='150px'
+                isTruncated>{currAccount}
+                </Text>
+              </Tag>
+            ) : (
+              <Button 
+              colorScheme='orange' 
+              px='8' 
+              type='button'
+              onClick={connectWallet}
+              >
+                Connect Wallet
+              </Button>
+            )
+          }
+        <IconButton
+        icon={colorMode ==='light' ? <FaMoon /> : <FaSun />}
+        isRound='true' 
+        size='lg' 
+        alignSelf='flex-end'
+        onClick={toggleColorMode}/>
       </HStack>
+      
       <Heading 
       mb='8'
       fontWeight='extrabold' 
@@ -267,12 +275,13 @@ function App() {
       bgGradient='linear(to-r, orange.500, orange.300, pink.500)'
       bgClip='text'
       >
-        ETH-2-MATIC BRIDGE
+        ETH-2-POLYGON BRIDGE
       </Heading>
+
       {
         (
           function(){
-            if(chainId === '0x5') {
+            if(currAccount && chainId === '0x5') {
               return(
                 <Tag
                 size='md'
@@ -286,7 +295,7 @@ function App() {
                   </Text>
                 </Tag>
               )
-            } else if (chainId === '0x13881') {
+            } else if (currAccount && chainId === '0x13881') {
               return (
                 <Tag
                 size='md'
@@ -319,8 +328,7 @@ function App() {
         )()
       }
 
-
-      <form onSubmit={bridgeMaticToEth}>
+      <form onSubmit={onSubmitHandler}>
           <HStack mt='8'>
               <Input 
               variant='filled' 
