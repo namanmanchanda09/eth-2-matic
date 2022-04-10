@@ -1,4 +1,26 @@
-import { Heading,HStack, VStack, IconButton, useColorMode, Button, Text, Tag, Input } from '@chakra-ui/react';
+import { 
+  Heading, 
+  HStack, 
+  VStack, 
+  IconButton, 
+  useColorMode, 
+  Button, 
+  Text, 
+  Tag, 
+  Input, 
+  Spinner,
+  useToast,
+  Link,
+  Table,
+  Thead,
+  Tbody,
+  Tfoot,
+  Tr,
+  Th,
+  Td,
+  TableCaption,
+  TableContainer,
+} from '@chakra-ui/react';
 import { FaSun, FaMoon } from 'react-icons/fa';
 import { ethers } from 'ethers'; 
 import { useState, useEffect } from 'react' 
@@ -12,6 +34,9 @@ function App() {
   const [currAccount, setCurrentAccount] = useState('')
   const [chainId, setCurrentChainId] = useState('');
   const [bridgeValue, setBridgeValue] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [balance, setBalance] = useState('');
+  const toast = useToast();
 
   const { colorMode, toggleColorMode } = useColorMode();
 
@@ -82,6 +107,29 @@ function App() {
       .catch(err => console.log(err));
   }
 
+  const checkBalance = async () => {
+
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    if(chainId === '0x5') {
+      console.log('dope dope ')
+      const balance = await provider.getBalance(currAccount);
+      console.log(balance);
+      setBalance(balance.toString());
+    } else if(chainId === '0x13881') {
+
+      console.log('wtf');
+
+      const signer = provider.getSigner();
+      let contract = new ethers.Contract('0xA6FA4fB5f76172d178d61B04b0ecd319C5d1C0aa', config.contractABI, signer);
+
+      const balance = await contract.balanceOf(currAccount);
+      setBalance(balance.toString())
+      console.log(balance);
+
+    }
+  }
+
+
   const bridgeEthToMatic = async () => {
     await hyphen.init();
 
@@ -92,11 +140,12 @@ function App() {
       toChainId: "80001",
       userAddress: `${currAccount}`
   });
-
+  setLoading(true);
   console.log(preTransferStatus);
 
 
     if(preTransferStatus.code === RESPONSE_CODES.ALLOWANCE_NOT_GIVEN) {
+      
       let approveTx = await hyphen.tokens.approveERC20(
         "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee", 
         preTransferStatus.depositContract, 
@@ -118,8 +167,18 @@ function App() {
         useBiconomy: true, 
         tag: "Buildspace Eth Bridge"
       });
+      
+      const txHash = `https://goerli.etherscan.io/tx/${depositTx.hash}`
+      console.log(txHash);
+      toast({
+        title: <Link href={txHash} isExternal='true'>Check Transaction</Link>,
+        status: 'success',
+        duration: 5000,
+        isClosable: true,
+      })
 
       await depositTx.wait(1);
+      setLoading(false);
     }
 
   }
@@ -134,11 +193,8 @@ function App() {
       toChainId: "5",
       userAddress: `${currAccount}`
   });
-
+  setLoading(true);
   if(preTransferStatus.code === RESPONSE_CODES.ALLOWANCE_NOT_GIVEN) {
-
-    console.log('giving allowance');
-
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     const signer = provider.getSigner();
     let contract = new ethers.Contract('0xA6FA4fB5f76172d178d61B04b0ecd319C5d1C0aa', config.contractABI, signer);
@@ -177,7 +233,18 @@ function App() {
       tag: "Buildspace Eth Bridge"
     });
 
+    const txHash = `https://mumbai.polygonscan.com/tx/${depositTx.hash}`
+    console.log(txHash);
+    toast({
+      title: <Link href={txHash} isExternal='true'>Check Transaction</Link>,
+      status: 'success',
+      duration: 5000,
+      isClosable: true,
+    })
+
+
     await depositTx.wait(1);
+    setLoading(false);
   }
   }
 
@@ -197,6 +264,10 @@ function App() {
   useEffect(() => {
     checkConnectedNetwork();
   }, [])
+
+  useEffect(() => {
+    checkBalance();
+  });
 
   useEffect(() => {
     window.process = {
@@ -338,6 +409,25 @@ function App() {
               <Button colorScheme='pink' px='8' type='submit'>Bridge</Button>
           </HStack>
       </form>
+
+      {
+        loading ? <Spinner color='orange.500'/> : null
+      }
+
+      {
+        currAccount ? (
+          <TableContainer>
+          <Table variant='simple'>
+            <Thead>
+              <Tr>
+                <Th>ETH/WETH BALANCE</Th>
+                <Th>{balance}</Th>
+              </Tr>
+            </Thead>
+          </Table>
+        </TableContainer>
+        ) : null
+      }
     </VStack>
   );
 }
